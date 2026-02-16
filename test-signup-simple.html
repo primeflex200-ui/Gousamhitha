@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Signup Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #2e7d32;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1b5e20;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>Simple Signup Test</h1>
+    <p>This matches your website's signup form exactly.</p>
+    
+    <form id="signup-form">
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="signup-name" required placeholder="Enter your full name">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="signup-email" required placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="tel" id="signup-mobile" required placeholder="Enter mobile number">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" required placeholder="Create password">
+        </div>
+        <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="signup-confirm" required placeholder="Confirm password">
+        </div>
+        <div class="message" id="signup-message" style="display: none;"></div>
+        <button type="submit">Create Account</button>
+    </form>
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://hdlgqdjmleezidpvakjd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkbGdxZGptbGVlemlkcHZha2pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5Njc4NzQsImV4cCI6MjA4NjU0Mzg3NH0.7ZGT025I70RyCWBMf3GwphvoZd6MBntU7Y7wORoy_tU';
+
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        console.log('Supabase initialized:', supabaseClient ? 'YES' : 'NO');
+
+        // Handle form submission
+        document.getElementById('signup-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const mobile = document.getElementById('signup-mobile').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm').value;
+            const messageEl = document.getElementById('signup-message');
+            
+            console.log('=== FORM SUBMITTED ===');
+            console.log('Name:', name);
+            console.log('Email:', email);
+            console.log('Mobile:', mobile);
+            console.log('Password length:', password.length);
+            
+            // Show message element
+            messageEl.style.display = 'block';
+            
+            // Validate password match
+            if (password !== confirmPassword) {
+                messageEl.textContent = 'Passwords do not match!';
+                messageEl.className = 'message error';
+                console.error('Password mismatch');
+                return;
+            }
+            
+            // Validate password length
+            if (password.length < 6) {
+                messageEl.textContent = 'Password must be at least 6 characters!';
+                messageEl.className = 'message error';
+                console.error('Password too short');
+                return;
+            }
+            
+            try {
+                messageEl.textContent = 'Creating account...';
+                messageEl.className = 'message info';
+                
+                console.log('Calling supabase.auth.signUp...');
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            mobile: mobile
+                        }
+                    }
+                });
+                
+                console.log('Signup response:', { data, error });
+                
+                if (error) {
+                    console.error('Signup error:', error);
+                    throw error;
+                }
+                
+                if (data.user) {
+                    console.log('✅ User created:', data.user.id);
+                    console.log('✅ Email:', data.user.email);
+                    console.log('✅ Session:', data.session ? 'EXISTS' : 'NULL');
+                    
+                    if (!data.session) {
+                        messageEl.textContent = '⚠️ Account created but email confirmation required. Check your email.';
+                        messageEl.className = 'message info';
+                        console.warn('Email confirmation required');
+                        return;
+                    }
+                    
+                    // Create profile
+                    const role = email === 'ruthvik@blockfortrust.com' ? 'admin' : 'customer';
+                    console.log('Creating profile with role:', role);
+                    
+                    const { error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .insert({
+                            id: data.user.id,
+                            email: email,
+                            role: role
+                        });
+                    
+                    if (profileError) {
+                        console.error('Profile creation error:', profileError);
+                    } else {
+                        console.log('✅ Profile created successfully');
+                    }
+                    
+                    messageEl.textContent = '✅ Account created successfully! Check Supabase Dashboard.';
+                    messageEl.className = 'message success';
+                    
+                    // Clear form
+                    document.getElementById('signup-form').reset();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                messageEl.textContent = '❌ Error: ' + error.message;
+                messageEl.className = 'message error';
+            }
+        });
+    </script>
+</body>
+</html>

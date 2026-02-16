@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - CB Admin</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="admin-page">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>CB Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="admin-products.html" class="nav-link">Products</a>
+                <a href="admin-add-product.html" class="nav-link active">Add Product</a>
+                <a href="admin-vendors.html" class="nav-link">Vendors</a>
+                <a href="admin-orders.html" class="nav-link">Orders</a>
+                <a href="#" class="nav-link" onclick="adminLogout()">Logout</a>
+            </nav>
+        </aside>
+        
+        <main class="admin-content">
+            <div class="content-header">
+                <h1>Add New Product</h1>
+            </div>
+            
+            <!-- Manage Categories Button -->
+            <div style="margin-bottom: 20px;">
+                <button type="button" onclick="toggleCategoryManagement()" class="btn-primary" style="padding: 10px 20px;">
+                    Manage Categories
+                </button>
+            </div>
+            
+            <!-- Category Management Panel (Hidden by default) -->
+            <div id="category-management-panel" class="category-management-section" style="display: none; background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #2e7d32;">Manage Categories</h3>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="new-category-input" placeholder="Enter new category name" 
+                           style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button onclick="addCategory()" class="btn-primary" style="padding: 8px 20px;">Add</button>
+                </div>
+                
+                <div id="categories-list" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <!-- Categories will be loaded here dynamically -->
+                </div>
+            </div>
+            
+            <div class="form-container">
+                <form id="add-product-form" onsubmit="handleAddProduct(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Product Name *</label>
+                            <input type="text" id="product-name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Select Vendor *</label>
+                            <select id="product-vendor" required>
+                                <option value="">Select Vendor</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <select id="product-category" required>
+                                <option value="">Select Category</option>
+                                <option value="Fruits & Vegetables">Fruits & Vegetables</option>
+                                <option value="Daily Staples">Daily Staples</option>
+                                <option value="Snacks & More">Snacks & More</option>
+                                <option value="Bakery & Dairy">Bakery & Dairy</option>
+                                <option value="Home Food">Home Food</option>
+                                <option value="Special Categories">Special Categories</option>
+                                <option value="Conscious Living">Conscious Living</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Subcategory *</label>
+                            <input type="text" id="product-subcategory" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Price (₹) *</label>
+                            <input type="number" id="product-price" required min="0" step="0.01">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Stock Quantity *</label>
+                            <input type="number" id="product-stock" required min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Unit *</label>
+                            <select id="product-unit" required>
+                                <option value="">Select Unit</option>
+                                <option value="kg">Kilogram (kg)</option>
+                                <option value="gram">Gram (g)</option>
+                                <option value="liter">Liter (L)</option>
+                                <option value="ml">Milliliter (ml)</option>
+                                <option value="piece">Piece</option>
+                                <option value="packet">Packet</option>
+                                <option value="box">Box</option>
+                                <option value="bottle">Bottle</option>
+                                <option value="jar">Jar</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Unit Quantity (e.g., 500 for 500ml) *</label>
+                            <input type="number" id="product-unit-quantity" required min="0" step="0.01" placeholder="e.g., 500, 1, 2.5">
+                            <small>Enter the quantity per unit (e.g., 500 for 500ml bottle, 1 for 1kg pack)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Product Image</label>
+                            <input type="file" id="product-image" accept="image/*" onchange="previewImage(event)">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="product-description" rows="4" placeholder="Enter product description, benefits, ingredients, etc."></textarea>
+                    </div>
+                    
+                    <div class="image-preview" id="image-preview"></div>
+                    
+                    <div class="form-message" id="form-message"></div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Add Product</button>
+                        <a href="admin-products.html" class="btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+    
+    <script src="supabase-auth.js"></script>
+    <script src="admin-script.js"></script>
+</body>
+</html>
